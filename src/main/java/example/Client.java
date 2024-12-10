@@ -3,10 +3,7 @@ package example;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import example.domain.Request;
 import example.domain.Response;
-import example.domain.game.Cave;
-import example.domain.game.Direction;
-import example.domain.game.Location;
-import example.domain.game.Player;
+import example.domain.game.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,11 +12,12 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 
 import static java.lang.Math.abs;
 
 public class Client {
-    private static final String HOST = "35.208.184.148";
+    private static final String HOST = "35.208.184.138";
     private static final int PORT = 8080;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
@@ -51,7 +49,6 @@ public class Client {
             Collection<Response.StateLocations.ItemLocation> itemLocations;
             Collection<Response.StateLocations.PlayerLocation> playerLocations;
             char[][] board = new char[0][0];
-            ArrayList<LinkedList<Character>> goldpaths= new ArrayList<>();
 
             while (!Thread.currentThread().isInterrupted()) {
                 final var line = reader.readLine();
@@ -90,7 +87,8 @@ public class Client {
                         writer.flush();
                         logger.info("Sent command: {}", cmd);
                         clearBoard(board);
-                        assignItems(board, itemLocations,playerLocations);
+                        assignItems(board, itemLocations);
+                        movePlayer(board, playerLocations);
                         writeBoard(board);
                     }
                 }
@@ -119,13 +117,22 @@ public class Client {
         }
     }
 
-    public void assignItems(char[][] board, Collection<Response.StateLocations.ItemLocation> itemLocations, Collection<Response.StateLocations.PlayerLocation> playerLocations){
+    public void assignItems(char[][] board, Collection<Response.StateLocations.ItemLocation> itemLocations){
         for (int i = 0; i < board[0].length; i++){
             for(int j=0;j<board.length;j++){
-                if (isGold(itemLocations,i,j)) {
-                    board[i][j] = 'G';
+                char item = isItem(itemLocations,i,j);
+                if (item != ' ') {
+                    board[i][j] = item;
                 }
-                else if(isPlayer(playerLocations,i,j)){
+            }
+        }
+    }
+
+    private void movePlayer(char[][] board, Collection<Response.StateLocations.PlayerLocation> playerLocations){
+        //dijkstra(board,)
+        for (int i = 0; i < board[0].length; i++){
+            for(int j=0;j<board.length;j++){
+                if(isPlayer(playerLocations,i,j)){
                     board[i][j] = 'P';
                 }
             }
@@ -140,15 +147,23 @@ public class Client {
         }
     }
 
-    private boolean isGold(Collection<Response.StateLocations.ItemLocation> itemLocations, int coloumn, int row) {
-        Location location;
+    private char isItem(Collection<Response.StateLocations.ItemLocation> itemLocations, int coloumn, int row) {
+        Location position;
         for(Response.StateLocations.ItemLocation item : itemLocations){
-            location = item.location();
-            if(location.row() == row && location.column() == coloumn){
-                return true;
+            position = item.location();
+            if(position.row() == row && position.column() == coloumn){
+                switch (item.entity()){
+                    case Item.Gold ignored -> {
+                        return 'G';
+                    }
+                    case Item.Health ignored -> {
+                        return 'H';
+                    }
+
+                }
             }
         }
-        return false;
+        return ' ';
     }
     private boolean isPlayer(Collection<Response.StateLocations.PlayerLocation> playerLocation, int coloumn, int row) {
         Location location;
@@ -161,37 +176,47 @@ public class Client {
         return false;
     }
 
-    private void getShortestGoldpath(Location playerLocation, Collection<Response.StateLocations.ItemLocation> itemLocations, Cave cave){
-        int length;
-        int shortestLength = 999999;
-        Location goldLocation = new Location(0,0);
+    private List<Location> dijkstra(char[][] board ,Location startLocation, Location goldLocation){
+        Location[][] previousVertex = new Location[board.length][board[0].length];
+        previousVertex[startLocation.row()][startLocation.column()] = startLocation;
 
-        for(var item : itemLocations){
-            length = abs(item.location().column() - playerLocation.column()) + abs(item.location().row() - playerLocation.row());
-            if(length<shortestLength) {
-                goldLocation = item.location();
-                shortestLength = length;
-            }
+        List<Location> queue = new LinkedList<>();
+        queue.add(startLocation);
+
+        Location currentLocation = new Location(0,0);
+        while(!queue.isEmpty()){
+            currentLocation = queue.get(0);
+            queue.remove(0);
+            addNeighbours(board,queue,currentLocation, previousVertex);
+            if(currentLocation == goldLocation)
+                break;
         }
 
-        StringBuilder path = new StringBuilder();
-        Location updatedPlayerLocation = playerLocation;
+        List<Location> goldPath = new LinkedList<>();
 
-        length = goldLocation.row() - playerLocation.row();
-     //   <---------------------->
-        while(updatedPlayerLocation != goldLocation){
-            int offset = length/abs(length);
-            while(!cave.rock(playerLocation.row() + offset, updatedPlayerLocation.row()) && updatedPlayerLocation != goldLocation )
-            {
-                if(offset == 1){
-                    path.append('w');
-                    updatedPlayerLocation = new Location(updatedPlayerLocation.row() + 1, updatedPlayerLocation.column());
-                }
-                else {
-                    path.append('s');
-                    updatedPlayerLocation = new Location(updatedPlayerLocation.row() - 1, updatedPlayerLocation.column());
-                }
-            }
+        while(currentLocation != startLocation){
+            goldPath.add(currentLocation);
+            currentLocation = previousVertex[currentLocation.row()][currentLocation.column()];
+        }
+
+        return goldPath;
+    }
+    private void addNeighbours(char[][] board,List<Location> queue, Location location, Location[][] previousVertex){
+        if(board[location.row() + 1][location.column()] != 'X' && previousVertex[location.row() + 1][location.column()].equals(new Location(0,0))) {
+            queue.add(new Location(location.row() + 1, location.column()));
+            previousVertex[location.row() + 1][location.column()] = location;
+        }
+        if(board[location.row() - 1][location.column()] != 'X' && previousVertex[location.row() - 1][location.column()].equals(new Location(0,0))) {
+            queue.add(new Location(location.row() - 1, location.column()));
+            previousVertex[location.row() - 1][location.column()] = location;
+        }
+        if(board[location.row()][location.column() + 1] != 'X' && previousVertex[location.row()][location.column() + 1].equals(new Location(0,0))) {
+            queue.add(new Location(location.row(), location.column() + 1));
+            previousVertex[location.row()][location.column() + 1] = location;
+        }
+        if(board[location.row()][location.column() - 1] != 'X' && previousVertex[location.row()][location.column() - 1].equals(new Location(0,0))) {
+            queue.add(new Location(location.row(), location.column() - 1));
+            previousVertex[location.row()][location.column() - 1] = location;
         }
 
     }
