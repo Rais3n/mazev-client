@@ -39,7 +39,7 @@ public class Board {
 
     private void updateBoard(Collection<Response.StateLocations.PlayerLocation> playerLocations, Collection<Response.StateLocations.ItemLocation> itemLocations){
         drawPlayers(playerLocations);
-        assignItems(itemLocations);
+        drawItems(itemLocations);
     }
 
     private void drawPlayers(Collection<Response.StateLocations.PlayerLocation> playerLocations){
@@ -53,7 +53,34 @@ public class Board {
         }
     }
 
-    private void assignItems(Collection<Response.StateLocations.ItemLocation> itemLocations){
+    public Location getClosestGold(Collection<Response.StateLocations.PlayerLocation> playerLocations, Collection<Response.StateLocations.ItemLocation> itemLocations,  Player player){
+
+        Location myPlayerlocation = null;
+        for(Response.StateLocations.PlayerLocation player1 : playerLocations){
+            if(player1.entity().equals(player)){
+                myPlayerlocation = player1.location();
+                System.out.println(myPlayerlocation + " frs");
+            }
+        }
+
+        Location closestGold = null;
+        int minDist = 99999;
+        int dist;
+        for(Response.StateLocations.ItemLocation itemLocation : itemLocations){
+            if(itemLocation.entity() instanceof Item.Gold){
+                dist = taxicabGeometryDistance(myPlayerlocation,itemLocation.location());
+                if(dist<minDist){
+                    Location goldLocation = itemLocation.location();
+                    minDist = dist;
+                    closestGold = goldLocation;
+                }
+            }
+        }
+
+        return closestGold;
+    }
+
+    private void drawItems(Collection<Response.StateLocations.ItemLocation> itemLocations){
         for (int i = 0; i < board.length; i++){
             for(int j=0;j<board[0].length;j++){
                 char item = isItem(itemLocations,i,j);
@@ -103,5 +130,11 @@ public class Board {
         return false;
     }
 
+    private int taxicabGeometryDistance(Location playerLocation, Location goldLocation){
+        int xDistance = Math.abs(playerLocation.column() - goldLocation.column());
+        int yDistance = Math.abs(playerLocation.row() - goldLocation.row());
+
+        return xDistance + yDistance;
+    }
 
 }

@@ -8,8 +8,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class Movement {
-    Location myPlayerLocation = new Location(0,0);
-    Location closestGold = new Location(0,0);
 
     private Location getMyLocation(Collection<Response.StateLocations.PlayerLocation> playerLocations, Player player){
 
@@ -23,17 +21,6 @@ public class Movement {
         return location;
     }
 
-    private Location getClosestGold(Collection<Response.StateLocations.PlayerLocation> playerLocations, Player player){
-
-        Location location = null;
-        for(Response.StateLocations.PlayerLocation player1 : playerLocations){
-            if(player1.entity().equals(player)){
-                location = player1.location();
-                System.out.println(location + " frs");
-            }
-        }
-        return location;
-    }
 
     private List<Location> dijkstra(char[][] board , Location startLocation, Location goldLocation){
         Location[][] previousVertex = new Location[board.length][board[0].length];
@@ -87,5 +74,7 @@ public class Movement {
 
         return new Request.Command(Direction.Up);
     }
+
+
 
 }

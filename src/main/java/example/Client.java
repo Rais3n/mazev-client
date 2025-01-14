@@ -48,6 +48,7 @@ public class Client {
             Board board = null;
             Cave cave;
             Player player = null;
+            Location goldLocation = null;
             Collection<Response.StateLocations.ItemLocation> itemLocations;
             Collection<Response.StateLocations.PlayerLocation> playerLocations;
 
@@ -78,7 +79,7 @@ public class Client {
                         playerLocations = stateLocations.playerLocations();
                         logger.info("itemLocations: {}", itemLocations);
                         logger.info("playerLocations: {}", playerLocations);
-
+                        goldLocation = board.getClosestGold(playerLocations, itemLocations, player);
                         final var cmd = new Request.Command(Direction.Up);
                         final var cmdJson = objectMapper.writeValueAsString(cmd);
                         writer.write(cmdJson);
@@ -95,9 +96,6 @@ public class Client {
             logger.info("Client exiting");
         }
     }
-
-
-
 
 
 
