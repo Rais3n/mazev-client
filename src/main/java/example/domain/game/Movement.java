@@ -1,5 +1,6 @@
 package example.domain.game;
 
+import example.domain.Board;
 import example.domain.Request;
 import example.domain.Response;
 
@@ -9,21 +10,9 @@ import java.util.List;
 
 public class Movement {
 
-    private Location getMyLocation(Collection<Response.StateLocations.PlayerLocation> playerLocations, Player player){
 
-        Location location = null;
-        for(Response.StateLocations.PlayerLocation player1 : playerLocations){
-            if(player1.entity().equals(player)){
-                location = player1.location();
-                System.out.println(location + " frs");
-            }
-        }
-        return location;
-    }
-
-
-    private List<Location> dijkstra(char[][] board , Location startLocation, Location goldLocation){
-        Location[][] previousVertex = new Location[board.length][board[0].length];
+    private static List<Location> dijkstra(Board board, Location startLocation, Location goldLocation){
+        Location[][] previousVertex = new Location[board.getHeigth()][board.getWidth()];
         previousVertex[startLocation.row()][startLocation.column()] = startLocation;
 
         List<Location> queue = new LinkedList<>();
@@ -47,32 +36,38 @@ public class Movement {
 
         return goldPath;
     }
-    private void addNeighbours(char[][] board,List<Location> queue, Location location, Location[][] previousVertex){
-        if(board[location.row() + 1][location.column()] != 'X' && previousVertex[location.row() + 1][location.column()].equals(new Location(0,0))) {
+
+    private static void addNeighbours(Board board,List<Location> queue, Location location, Location[][] previousVertex){
+        if(board.getField(location.row() + 1,location.column()) != 'X' && previousVertex[location.row() + 1][location.column()] == null) { //drugi warunek isunivisited
             queue.add(new Location(location.row() + 1, location.column()));
             previousVertex[location.row() + 1][location.column()] = location;
         }
-        if(board[location.row() - 1][location.column()] != 'X' && previousVertex[location.row() - 1][location.column()].equals(new Location(0,0))) {
+        if(board.getField(location.row() - 1,location.column()) != 'X' && previousVertex[location.row() - 1][location.column()] == null) {
             queue.add(new Location(location.row() - 1, location.column()));
             previousVertex[location.row() - 1][location.column()] = location;
         }
-        if(board[location.row()][location.column() + 1] != 'X' && previousVertex[location.row()][location.column() + 1].equals(new Location(0,0))) {
+        if(board.getField(location.row(),location.column() + 1) != 'X' && previousVertex[location.row()][location.column() + 1] == null) {
             queue.add(new Location(location.row(), location.column() + 1));
             previousVertex[location.row()][location.column() + 1] = location;
         }
-        if(board[location.row()][location.column() - 1] != 'X' && previousVertex[location.row()][location.column() - 1].equals(new Location(0,0))) {
+        if(board.getField(location.row(),location.column() - 1) != 'X' && previousVertex[location.row()][location.column() - 1] == null) {
             queue.add(new Location(location.row(), location.column() - 1));
             previousVertex[location.row()][location.column() - 1] = location;
         }
 
     }
 
-    private Request Direction(char[][] board , Location myPlayerLocation, Location goldLocation){
-
-        dijkstra(board,myPlayerLocation,goldLocation);
-
-
-        return new Request.Command(Direction.Up);
+    public static Direction Direction(Board board,Location myPlayerLocation, Location closestGold){
+        List<Location> goldPath = dijkstra(board, myPlayerLocation, closestGold);
+        Location firstMove = new Location(goldPath.getFirst().row() - myPlayerLocation.row(), goldPath.getFirst().column() - myPlayerLocation.column());
+        if(firstMove.column() - myPlayerLocation.column() == 1)
+            return Direction.Right;
+        if(firstMove.column() - myPlayerLocation.column() == -1)
+            return Direction.Left;
+        if(firstMove.row() - myPlayerLocation.row() == 1)
+            return Direction.Down;
+        else
+            return Direction.Up;
     }
 
 

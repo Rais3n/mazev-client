@@ -17,6 +17,16 @@ public class Board {
         assignRocks(cave);
     }
 
+    public char getField(int row, int column){
+        return board[row][column];
+    }
+    public int getHeigth(){
+        return board.length;
+    }
+    public int getWidth(){
+        return board[0].length;
+    }
+    //dynamiczne proxy - udawanie interfejsow
     public void clearBoard(){
         for (int i = 0; i < board.length; i++)
             for(int j=0;j < board[0].length;j++) {
@@ -53,13 +63,13 @@ public class Board {
         }
     }
 
+
     public Location getClosestGold(Collection<Response.StateLocations.PlayerLocation> playerLocations, Collection<Response.StateLocations.ItemLocation> itemLocations,  Player player){
 
         Location myPlayerlocation = null;
         for(Response.StateLocations.PlayerLocation player1 : playerLocations){
             if(player1.entity().equals(player)){
                 myPlayerlocation = player1.location();
-                System.out.println(myPlayerlocation + " frs");
             }
         }
 
@@ -78,6 +88,17 @@ public class Board {
         }
 
         return closestGold;
+    }
+    public Location getMyLocation(Collection<Response.StateLocations.PlayerLocation> playerLocations, Player player){
+
+        Location location = null;
+        for(Response.StateLocations.PlayerLocation player1 : playerLocations){
+            if(player1.entity().equals(player)){
+                location = player1.location();
+                System.out.println(location + " frs");
+            }
+        }
+        return location;
     }
 
     private void drawItems(Collection<Response.StateLocations.ItemLocation> itemLocations){
@@ -101,11 +122,11 @@ public class Board {
         }
     }
 
-    private char isItem(Collection<Response.StateLocations.ItemLocation> itemLocations, int coloumn, int row) {
+    private char isItem(Collection<Response.StateLocations.ItemLocation> itemLocations, int row, int column) {
         Location position;
         for(Response.StateLocations.ItemLocation item : itemLocations){
             position = item.location();
-            if(position.row() == row && position.column() == coloumn){
+            if(position.row() == row && position.column() == column){
                 switch (item.entity()){
                     case Item.Gold ignored -> {
                         return 'G';
@@ -119,11 +140,11 @@ public class Board {
         }
         return ' ';
     }
-    private boolean isPlayer(Collection<Response.StateLocations.PlayerLocation> playerLocation, int coloumn, int row) {
+    private boolean isPlayer(Collection<Response.StateLocations.PlayerLocation> playerLocation, int row, int column) {
         Location location;
         for(Response.StateLocations.PlayerLocation player : playerLocation){
             location = player.location();
-            if(location.row() == row && location.column() == coloumn){
+            if(location.row() == row && location.column() == column){
                 return true;
             }
         }
