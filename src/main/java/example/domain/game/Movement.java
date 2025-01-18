@@ -12,6 +12,9 @@ public class Movement {
     static Location myPlayerLocation;
     static Location closestGoldLocation;
 
+    public static Location getMyPlayerLocation() {
+        return myPlayerLocation;
+    }
 
     public static void setClosestGold(Collection<Response.StateLocations.ItemLocation> itemLocations){
         Location closestGold = new Location(1,1);

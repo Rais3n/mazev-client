@@ -1,9 +1,6 @@
 package example.domain;
 
-import example.domain.game.Cave;
-import example.domain.game.Item;
-import example.domain.game.Location;
-import example.domain.game.Player;
+import example.domain.game.*;
 
 import java.util.Collection;
 
@@ -54,11 +51,13 @@ public class Board {
     }
 
     private void drawPlayers(Collection<Response.StateLocations.PlayerLocation> playerLocations){
+        Location myPlayer = Movement.getMyPlayerLocation();
         for (int i = 0; i < board.length; i++){
             for(int j=0;j<board[0].length;j++){
                 if(isPlayer(playerLocations,i,j)){
                     board[i][j] = 'P';
-
+                    if(myPlayer.equals(new Location(i,j)))
+                        board[i][j] = 'J';
                 }
             }
         }
