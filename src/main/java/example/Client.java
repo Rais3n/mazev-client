@@ -10,10 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
 
 import static java.lang.Math.abs;
 
@@ -48,8 +45,6 @@ public class Client {
             Board board = null;
             Cave cave;
             Player player = null;
-            Location goldLocation = null;
-            Location myLocation = null;
             Collection<Response.StateLocations.ItemLocation> itemLocations;
             Collection<Response.StateLocations.PlayerLocation> playerLocations;
 
@@ -80,10 +75,10 @@ public class Client {
                         playerLocations = stateLocations.playerLocations();
                         logger.info("itemLocations: {}", itemLocations);
                         logger.info("playerLocations: {}", playerLocations);
-                        goldLocation = board.getClosestGold(playerLocations, itemLocations, player);
-                        myLocation = board.getMyLocation(playerLocations,player);
+                        Movement.setClosestGold(itemLocations);
+                        Movement.setPlayerLocation(playerLocations,player);
+                        final var cmd = new Request.Command(Movement.Direction(board));
                         //final var cmd = new Request.Command(Direction.Up);
-                        final var cmd = new Request.Command(Movement.Direction(board,myLocation,goldLocation));
                         final var cmdJson = objectMapper.writeValueAsString(cmd);
                         writer.write(cmdJson);
                         writer.newLine();

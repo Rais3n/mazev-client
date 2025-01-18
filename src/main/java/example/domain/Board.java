@@ -20,12 +20,13 @@ public class Board {
     public char getField(int row, int column){
         return board[row][column];
     }
-    public int getHeigth(){
+    public int getBoardHeigth(){
         return board.length;
     }
-    public int getWidth(){
+    public int getBoardWidth(){
         return board[0].length;
     }
+
     //dynamiczne proxy - udawanie interfejsow
     public void clearBoard(){
         for (int i = 0; i < board.length; i++)
@@ -64,42 +65,7 @@ public class Board {
     }
 
 
-    public Location getClosestGold(Collection<Response.StateLocations.PlayerLocation> playerLocations, Collection<Response.StateLocations.ItemLocation> itemLocations,  Player player){
 
-        Location myPlayerlocation = null;
-        for(Response.StateLocations.PlayerLocation player1 : playerLocations){
-            if(player1.entity().equals(player)){
-                myPlayerlocation = player1.location();
-            }
-        }
-
-        Location closestGold = null;
-        int minDist = 99999;
-        int dist;
-        for(Response.StateLocations.ItemLocation itemLocation : itemLocations){
-            if(itemLocation.entity() instanceof Item.Gold){
-                dist = taxicabGeometryDistance(myPlayerlocation,itemLocation.location());
-                if(dist<minDist){
-                    Location goldLocation = itemLocation.location();
-                    minDist = dist;
-                    closestGold = goldLocation;
-                }
-            }
-        }
-
-        return closestGold;
-    }
-    public Location getMyLocation(Collection<Response.StateLocations.PlayerLocation> playerLocations, Player player){
-
-        Location location = null;
-        for(Response.StateLocations.PlayerLocation player1 : playerLocations){
-            if(player1.entity().equals(player)){
-                location = player1.location();
-                System.out.println(location + " frs");
-            }
-        }
-        return location;
-    }
 
     private void drawItems(Collection<Response.StateLocations.ItemLocation> itemLocations){
         for (int i = 0; i < board.length; i++){
@@ -123,39 +89,50 @@ public class Board {
     }
 
     private char isItem(Collection<Response.StateLocations.ItemLocation> itemLocations, int row, int column) {
-        Location position;
-        for(Response.StateLocations.ItemLocation item : itemLocations){
-            position = item.location();
-            if(position.row() == row && position.column() == column){
-                switch (item.entity()){
-                    case Item.Gold ignored -> {
-                        return 'G';
-                    }
-                    case Item.Health ignored -> {
-                        return 'H';
-                    }
+//        Location position;
+//        for(Response.StateLocations.ItemLocation item : itemLocations){
+//            position = item.location();
+//            if(position.row() == row && position.column() == column){
+//                switch (item.entity()){
+//                    case Item.Gold ignored -> {
+//                        return 'G';
+//                    }
+//                    case Item.Health ignored -> {
+//                        return 'H';
+//                    }
+//
+//                }
+//            }
+//        }
+//        return ' ';
 
-                }
-            }
-        }
-        return ' ';
+        return itemLocations.stream()
+                .filter(item -> item.location().row() == row && item.location().column() == column)
+                .map(item -> {
+                    switch (item.entity()) {
+                        case Item.Gold ignored: return 'G';
+                        case Item.Health ignored: return 'H';
+                        default: return ' ';
+                    }
+                })
+                .findFirst()
+                .orElse(' ');
     }
     private boolean isPlayer(Collection<Response.StateLocations.PlayerLocation> playerLocation, int row, int column) {
-        Location location;
-        for(Response.StateLocations.PlayerLocation player : playerLocation){
-            location = player.location();
-            if(location.row() == row && location.column() == column){
-                return true;
-            }
-        }
-        return false;
+//        Location location;
+//        for(Response.StateLocations.PlayerLocation player : playerLocation){
+//            location = player.location();
+//            if(location.row() == row && location.column() == column){
+//                return true;
+//            }
+//        }
+//        return false;
+
+        return playerLocation.stream()
+                .map(Response.StateLocations.PlayerLocation::location)
+                .anyMatch(location -> location.row() == row && location.column() == column);
     }
 
-    private int taxicabGeometryDistance(Location playerLocation, Location goldLocation){
-        int xDistance = Math.abs(playerLocation.column() - goldLocation.column());
-        int yDistance = Math.abs(playerLocation.row() - goldLocation.row());
 
-        return xDistance + yDistance;
-    }
 
 }
