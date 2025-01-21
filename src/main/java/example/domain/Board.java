@@ -63,9 +63,6 @@ public class Board {
         }
     }
 
-
-
-
     private void drawItems(Collection<Response.StateLocations.ItemLocation> itemLocations){
         for (int i = 0; i < board.length; i++){
             for(int j=0;j<board[0].length;j++){
@@ -88,22 +85,6 @@ public class Board {
     }
 
     private char isItem(Collection<Response.StateLocations.ItemLocation> itemLocations, int row, int column) {
-//        Location position;
-//        for(Response.StateLocations.ItemLocation item : itemLocations){
-//            position = item.location();
-//            if(position.row() == row && position.column() == column){
-//                switch (item.entity()){
-//                    case Item.Gold ignored -> {
-//                        return 'G';
-//                    }
-//                    case Item.Health ignored -> {
-//                        return 'H';
-//                    }
-//
-//                }
-//            }
-//        }
-//        return ' ';
 
         return itemLocations.stream()
                 .filter(item -> item.location().row() == row && item.location().column() == column)
@@ -118,15 +99,6 @@ public class Board {
                 .orElse(' ');
     }
     private boolean isPlayer(Collection<Response.StateLocations.PlayerLocation> playerLocation, int row, int column) {
-//        Location location;
-//        for(Response.StateLocations.PlayerLocation player : playerLocation){
-//            location = player.location();
-//            if(location.row() == row && location.column() == column){
-//                return true;
-//            }
-//        }
-//        return false;
-
         return playerLocation.stream()
                 .map(Response.StateLocations.PlayerLocation::location)
                 .anyMatch(location -> location.row() == row && location.column() == column);

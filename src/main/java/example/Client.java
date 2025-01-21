@@ -35,7 +35,7 @@ public class Client {
             logger.info("Connected to server at {}:{}", HOST, PORT);
 
             {
-                final var json = objectMapper.writeValueAsString(new Request.Authorize("1679"));
+                final var json = objectMapper.writeValueAsString(new Request.Authorize("79rb42Fs"));
                 writer.write(json);
                 writer.newLine();
                 writer.flush();
@@ -47,6 +47,7 @@ public class Client {
             Player player = null;
             Collection<Response.StateLocations.ItemLocation> itemLocations;
             Collection<Response.StateLocations.PlayerLocation> playerLocations;
+            Location myPlayerLocation;
 
             while (!Thread.currentThread().isInterrupted()) {
                 final var line = reader.readLine();
@@ -75,10 +76,11 @@ public class Client {
                         playerLocations = stateLocations.playerLocations();
                         logger.info("itemLocations: {}", itemLocations);
                         logger.info("playerLocations: {}", playerLocations);
-                        Movement.setClosestGold(itemLocations);
-                        Movement.setPlayerLocation(playerLocations,player);
+
+                        Movement.setMyPlayerLocation(playerLocations,player);
+                        Movement.setGoldToPath(itemLocations,playerLocations,player);
+
                         final var cmd = new Request.Command(Movement.Direction(board));
-                        //final var cmd = new Request.Command(Direction.Up);
                         final var cmdJson = objectMapper.writeValueAsString(cmd);
                         writer.write(cmdJson);
                         writer.newLine();
@@ -94,15 +96,6 @@ public class Client {
             logger.info("Client exiting");
         }
     }
-
-
-
-
-
-
-
-
-
 
 }
 
