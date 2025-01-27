@@ -10,68 +10,12 @@ import java.util.List;
 public class Movement {
 
     static Location myPlayerLocation;
-    static Location closestGoldLocation;
+    static Location closestResourceLocation;
+    static boolean avoidPlayers = false;
+    static ItemType pathingTo = ItemType.Gold;
+    static List<Location> opponentsLocationList = new LinkedList<>();
+    static int healthToGather = 0;
 
-    public static Location getMyPlayerLocation() {
-        return myPlayerLocation;
-    }
-
-    public static void setGoldToPath(Collection<Response.StateLocations.ItemLocation> itemLocations, Collection<Response.StateLocations.PlayerLocation> playerLocations, Player myPlayer){
-        List<Location> skipGoldLocation = new LinkedList<>();
-        int myDistance = 0;
-        int opponentDistance;
-        Location goldLocation;
-        boolean isGoldFound = false;
-
-        while(!isGoldFound) {
-
-            for (Response.StateLocations.PlayerLocation player : playerLocations) {
-                if (player.entity().equals(myPlayer)) {
-                    closestGoldLocation = setClosestGold(itemLocations, player.location(), skipGoldLocation);
-                    myDistance = taxicabGeometryDistance(player.location(), closestGoldLocation);
-                }
-            }
-            isGoldFound = true;
-
-            for (Response.StateLocations.PlayerLocation player : playerLocations) {
-                if (!player.entity().equals(myPlayer)) {
-                    goldLocation = setClosestGold(itemLocations, player.location(), null);
-                    opponentDistance = taxicabGeometryDistance(player.location(), goldLocation);
-                    if (goldLocation.equals(closestGoldLocation) && opponentDistance < myDistance) {
-                        isGoldFound = false;
-                        skipGoldLocation.add(closestGoldLocation);
-                    }
-                }
-            }
-
-        }
-    }
-
-    public static Location setClosestGold(Collection<Response.StateLocations.ItemLocation> itemLocations, Location playerLocation, Collection<Location> skipGoldLocationList){
-        Location closestGold = new Location(1,1);
-        int minDist = 99999;
-        int dist;
-        for(Response.StateLocations.ItemLocation itemLocation : itemLocations){
-            if(itemLocation.entity() instanceof Item.Gold && (skipGoldLocationList == null || !skipGoldLocationList.contains(itemLocation.location()))){
-
-                dist = taxicabGeometryDistance(playerLocation,itemLocation.location());
-                if(dist<minDist){
-                    Location goldLocation = itemLocation.location();
-                    minDist = dist;
-                    closestGold = goldLocation;
-                }
-            }
-        }
-
-        return closestGold;
-    }
-
-    private static int taxicabGeometryDistance(Location playerLocation, Location goldLocation){
-        int xDistance = Math.abs(playerLocation.column() - goldLocation.column());
-        int yDistance = Math.abs(playerLocation.row() - goldLocation.row());
-
-        return xDistance + yDistance;
-    }
 
     public static void setMyPlayerLocation(Collection<Response.StateLocations.PlayerLocation> playerLocations, Player myPlayer){
 
@@ -83,56 +27,111 @@ public class Movement {
 
     }
 
-
-    private static List<Location> dijkstra(Board board){
-        Location[][] previousVertex = new Location[board.getBoardHeigth()][board.getBoardWidth()];
-        previousVertex[myPlayerLocation.row()][myPlayerLocation.column()] = closestGoldLocation;
-
-        List<Location> queue = new LinkedList<>();
-        queue.add(myPlayerLocation);
-
-        Location currentLocation = new Location(0,0);
-        while(!queue.isEmpty()){
-            currentLocation = queue.getFirst();
-            queue.removeFirst();
-            addNeighbours(board,queue,currentLocation, previousVertex);
-            if(currentLocation.equals(closestGoldLocation))
-                break;
-        }
-
-        List<Location> goldPath = new LinkedList<>();
-
-        while(currentLocation != myPlayerLocation){
-            goldPath.add(currentLocation);
-            currentLocation = previousVertex[currentLocation.row()][currentLocation.column()];
-        }
-
-        return goldPath;
+    public static Location getMyPlayerLocation() {
+        return myPlayerLocation;
     }
 
-    private static void addNeighbours(Board board,List<Location> queue, Location location, Location[][] previousVertex){
-        if(board.getField(location.row() + 1,location.column()) != 'X' && previousVertex[location.row() + 1][location.column()] == null) { //drugi warunek isunivisited
-            queue.add(new Location(location.row() + 1, location.column()));
-            previousVertex[location.row() + 1][location.column()] = location;
-        }
-        if(board.getField(location.row() - 1,location.column()) != 'X' && previousVertex[location.row() - 1][location.column()] == null) {
-            queue.add(new Location(location.row() - 1, location.column()));
-            previousVertex[location.row() - 1][location.column()] = location;
-        }
-        if(board.getField(location.row(),location.column() + 1) != 'X' && previousVertex[location.row()][location.column() + 1] == null) {
-            queue.add(new Location(location.row(), location.column() + 1));
-            previousVertex[location.row()][location.column() + 1] = location;
-        }
-        if(board.getField(location.row(),location.column() - 1) != 'X' && previousVertex[location.row()][location.column() - 1] == null) {
-            queue.add(new Location(location.row(), location.column() - 1));
-            previousVertex[location.row()][location.column() - 1] = location;
-        }
+    private static void setClosestResourceLocation(Location closestResourceLocation) {
+        Movement.closestResourceLocation = closestResourceLocation;
+    }
+
+    private static boolean filterResource(Response.StateLocations.ItemLocation item){
+        if(item.entity() instanceof Item.Gold && pathingTo == ItemType.Gold)
+            return true;
+        else return item.entity() instanceof Item.Health && pathingTo == ItemType.HP;
+    }
+
+    public static void updateOpponentsLocationList(Collection<Response.StateLocations.PlayerLocation> playerLocations, Player myPlayer){
+        opponentsLocationList.clear();
+        playerLocations.stream()
+                .filter(player -> !player.entity().equals(myPlayer))
+                .map(Response.StateLocations.PlayerLocation::location)
+                .forEach(location -> opponentsLocationList.add(location));
 
     }
 
-    public static Direction Direction(Board board){
+    public static void checkIfFighting(Collection<Response.StateLocations.PlayerLocation> playerLocations, Player myPlayer){
+        if(!avoidPlayers) {
+            avoidPlayers = playerLocations.stream()
+                    .filter(player -> !player.entity().equals(myPlayer))
+                    .map(Response.StateLocations.PlayerLocation::location)
+                    .anyMatch(location -> location == myPlayerLocation);
+            if(avoidPlayers) {
+                pathingTo = ItemType.HP;
+                healthToGather = 3;
+            }
+        }
+        if(avoidPlayers)
+            backToLookingForGold();
+    }
 
-        List<Location> goldPath = dijkstra(board);
+    private static void backToLookingForGold(){
+        if(pathingTo == ItemType.HP && myPlayerLocation.equals(closestResourceLocation)) {
+            healthToGather--;
+            if(healthToGather<=0) {
+                pathingTo = ItemType.Gold;
+                avoidPlayers = false;
+            }
+        }
+    }
+
+    public static Location findClosestResource(Collection<Response.StateLocations.ItemLocation> itemLocations, Location playerLocation, Collection<Location> skipResourceLocationList){
+        Location closestResource = new Location(1,1);
+        int minDist = 99999;
+        int dist;
+        for(Response.StateLocations.ItemLocation itemLocation : itemLocations){
+            if(filterResource(itemLocation) && (skipResourceLocationList == null || !skipResourceLocationList.contains(itemLocation.location())))
+
+            {
+                dist = Algoritm.taxicabGeometryDistance(playerLocation,itemLocation.location());
+                if(dist<minDist){
+                    Location resourceLocation = itemLocation.location();
+                    minDist = dist;
+                    closestResource = resourceLocation;
+                }
+            }
+        }
+
+        return closestResource;
+    }
+
+    public static void setResourceToPath(Collection<Response.StateLocations.ItemLocation> itemLocations, Collection<Response.StateLocations.PlayerLocation> playerLocations, Player myPlayer){
+        List<Location> skipResourceLocation = new LinkedList<>();
+        int myDistance = 0;
+        int opponentDistance;
+        Location resourceLocation;
+        boolean isResourceFound = false;
+
+        while(!isResourceFound) {
+            for (Response.StateLocations.PlayerLocation player : playerLocations) {
+                if (player.entity().equals(myPlayer)) {
+                    setClosestResourceLocation(findClosestResource(itemLocations, player.location(), skipResourceLocation));
+                    myDistance = Algoritm.taxicabGeometryDistance(player.location(), closestResourceLocation);
+                }
+            }
+            isResourceFound = true;
+
+            for (Response.StateLocations.PlayerLocation player : playerLocations) {
+                if (!player.entity().equals(myPlayer)) {
+                    resourceLocation = findClosestResource(itemLocations, player.location(), null);
+                    opponentDistance = Algoritm.taxicabGeometryDistance(player.location(), resourceLocation);
+                    if (resourceLocation.equals(closestResourceLocation) && opponentDistance < myDistance) {
+                        isResourceFound = false;
+                        skipResourceLocation.add(closestResourceLocation);
+                        break;
+                    }
+                }
+            }
+
+        }
+        if(closestResourceLocation.equals(new Location(1,1))) {
+            setClosestResourceLocation(findClosestResource(itemLocations, myPlayerLocation, null));
+        }
+    }
+
+    public static Direction direction(Board board){
+
+        List<Location> goldPath = Algoritm.dijkstra(board, myPlayerLocation, closestResourceLocation, avoidPlayers, opponentsLocationList);
 
         System.out.println("sciezka do zlota" + goldPath);
         System.out.println("moja lokalizacja" + myPlayerLocation);

@@ -47,7 +47,6 @@ public class Client {
             Player player = null;
             Collection<Response.StateLocations.ItemLocation> itemLocations;
             Collection<Response.StateLocations.PlayerLocation> playerLocations;
-            Location myPlayerLocation;
 
             while (!Thread.currentThread().isInterrupted()) {
                 final var line = reader.readLine();
@@ -76,11 +75,13 @@ public class Client {
                         playerLocations = stateLocations.playerLocations();
                         logger.info("itemLocations: {}", itemLocations);
                         logger.info("playerLocations: {}", playerLocations);
-
                         Movement.setMyPlayerLocation(playerLocations,player);
-                        Movement.setGoldToPath(itemLocations,playerLocations,player);
+                        Movement.updateOpponentsLocationList(playerLocations, player);
+                        Movement.checkIfFighting(playerLocations, player);
 
-                        final var cmd = new Request.Command(Movement.Direction(board));
+                        Movement.setResourceToPath(itemLocations,playerLocations,player);
+
+                        final var cmd = new Request.Command(Movement.direction(board));
                         final var cmdJson = objectMapper.writeValueAsString(cmd);
                         writer.write(cmdJson);
                         writer.newLine();
