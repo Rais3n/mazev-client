@@ -8,6 +8,7 @@ public class Board {
 
     char[][] board;
 
+
     public Board(Cave cave){
         board = new char[cave.rows()][cave.columns()];
         clearBoard();
@@ -102,6 +103,10 @@ public class Board {
         return playerLocation.stream()
                 .map(Response.StateLocations.PlayerLocation::location)
                 .anyMatch(location -> location.row() == row && location.column() == column);
+    }
+
+    public void DisplayGoldHP(){
+
     }
 
 

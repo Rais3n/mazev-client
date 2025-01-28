@@ -47,6 +47,8 @@ public class Client {
             Player player = null;
             Collection<Response.StateLocations.ItemLocation> itemLocations;
             Collection<Response.StateLocations.PlayerLocation> playerLocations;
+            Integer health;
+            Integer gold;
 
             while (!Thread.currentThread().isInterrupted()) {
                 final var line = reader.readLine();
@@ -73,11 +75,16 @@ public class Client {
                     case Response.StateLocations stateLocations -> {
                         itemLocations = stateLocations.itemLocations();
                         playerLocations = stateLocations.playerLocations();
+                        health = stateLocations.health();
+                        gold = stateLocations.gold();
                         logger.info("itemLocations: {}", itemLocations);
                         logger.info("playerLocations: {}", playerLocations);
                         Movement.setMyPlayerLocation(playerLocations,player);
                         Movement.updateOpponentsLocationList(playerLocations, player);
-                        Movement.checkIfFighting(playerLocations, player);
+                        Movement.setKindOfResourceToPath(health);
+                        System.out.println("Moje życie: " + health);
+                        System.out.println("Moje złoto: " + gold);
+
 
                         Movement.setResourceToPath(itemLocations,playerLocations,player);
 

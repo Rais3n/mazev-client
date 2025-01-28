@@ -14,8 +14,6 @@ public class Movement {
     static boolean avoidPlayers = false;
     static ItemType pathingTo = ItemType.Gold;
     static List<Location> opponentsLocationList = new LinkedList<>();
-    static int healthToGather = 0;
-
 
     public static void setMyPlayerLocation(Collection<Response.StateLocations.PlayerLocation> playerLocations, Player myPlayer){
 
@@ -49,41 +47,28 @@ public class Movement {
                 .forEach(location -> opponentsLocationList.add(location));
 
     }
-
-    public static void checkIfFighting(Collection<Response.StateLocations.PlayerLocation> playerLocations, Player myPlayer){
-        if(!avoidPlayers) {
-            avoidPlayers = playerLocations.stream()
-                    .filter(player -> !player.entity().equals(myPlayer))
-                    .map(Response.StateLocations.PlayerLocation::location)
-                    .anyMatch(location -> location == myPlayerLocation);
-            if(avoidPlayers) {
-                pathingTo = ItemType.HP;
-                healthToGather = 3;
-            }
+    public static void setKindOfResourceToPath(Integer health){
+        if(health < 75){
+            avoidPlayers = true;
+            pathingTo = ItemType.HP;
         }
-        if(avoidPlayers)
-            backToLookingForGold();
-    }
-
-    private static void backToLookingForGold(){
-        if(pathingTo == ItemType.HP && myPlayerLocation.equals(closestResourceLocation)) {
-            healthToGather--;
-            if(healthToGather<=0) {
-                pathingTo = ItemType.Gold;
-                avoidPlayers = false;
-            }
+        else if(avoidPlayers && health > 150){
+            pathingTo = ItemType.Gold;
+            avoidPlayers = false;
         }
     }
+
 
     public static Location findClosestResource(Collection<Response.StateLocations.ItemLocation> itemLocations, Location playerLocation, Collection<Location> skipResourceLocationList){
         Location closestResource = new Location(1,1);
         int minDist = 99999;
         int dist;
+
         for(Response.StateLocations.ItemLocation itemLocation : itemLocations){
             if(filterResource(itemLocation) && (skipResourceLocationList == null || !skipResourceLocationList.contains(itemLocation.location())))
-
             {
                 dist = Algoritm.taxicabGeometryDistance(playerLocation,itemLocation.location());
+
                 if(dist<minDist){
                     Location resourceLocation = itemLocation.location();
                     minDist = dist;
